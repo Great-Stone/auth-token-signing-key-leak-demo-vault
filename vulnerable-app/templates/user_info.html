@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>사용자 정보</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #1976d2;
+        }
+        .user-info {
+            background-color: #f9f9f9;
+            padding: 20px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .info-row {
+            display: flex;
+            padding: 10px 0;
+            border-bottom: 1px solid #eee;
+        }
+        .info-label {
+            font-weight: bold;
+            width: 150px;
+        }
+        .info-value {
+            flex: 1;
+        }
+        .token-info {
+            background-color: #fff3cd;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        .warning {
+            background-color: #ffebee;
+            border: 1px solid #d32f2f;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        .code-block {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>사용자 정보</h1>
+        
+        <div class="user-info">
+            <div class="info-row">
+                <div class="info-label">ID:</div>
+                <div class="info-value">{{ user.id }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">사용자명:</div>
+                <div class="info-value">{{ user.username }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">이메일:</div>
+                <div class="info-value">{{ user.email }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">전화번호:</div>
+                <div class="info-value">{{ user.phone_num }}</div>
+            </div>
+            <div class="info-row">
+                <div class="info-label">주소:</div>
+                <div class="info-value">{{ user.address }}</div>
+            </div>
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ 취약점 시연:</strong> 서명 검증은 정상적으로 작동합니다.
+            하지만 해커가 유출된 개인키를 가지고 있으면, 유효한 서명으로 다른 사용자의 user_id를 포함한 토큰을 생성할 수 있습니다.
+            그 토큰은 정상적으로 검증을 통과하지만, 토큰의 user_id와 URL의 user_id를 비교하지 않아 다른 사용자 정보에 접근할 수 있습니다.
+        </div>
+        
+        <div class="token-info">
+            <strong>현재 토큰:</strong><br>
+            <div class="code-block">{{ current_token }}</div>
+            <br>
+            <strong>토큰 Payload:</strong><br>
+            <pre>{{ token_info | tojson(indent=2) }}</pre>
+        </div>
+        
+        <a href="/" class="btn">홈으로</a>
+    </div>
+</body>
+</html>
+

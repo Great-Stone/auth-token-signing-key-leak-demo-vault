@@ -1,0 +1,446 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>공격 데모 - 유출된 서명 키로 타인 정보 접근</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 {
+            color: #d32f2f;
+        }
+        h2 {
+            color: #1976d2;
+            border-bottom: 2px solid #1976d2;
+            padding-bottom: 10px;
+        }
+        .step {
+            margin: 30px 0;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 4px;
+            border-left: 4px solid #1976d2;
+        }
+        .step h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .btn {
+            padding: 10px 20px;
+            background-color: #1976d2;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+            font-size: 14px;
+        }
+        .btn:hover {
+            background-color: #1565c0;
+        }
+        .btn-danger {
+            background-color: #d32f2f;
+        }
+        .btn-danger:hover {
+            background-color: #b71c1c;
+        }
+        .result {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success {
+            background-color: #e8f5e9;
+            border: 1px solid #4caf50;
+        }
+        .error {
+            background-color: #ffebee;
+            border: 1px solid #d32f2f;
+        }
+        .info {
+            background-color: #e3f2fd;
+            border: 1px solid #2196f3;
+        }
+        select, input[type="number"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+        .token-display {
+            background-color: #f5f5f5;
+            padding: 10px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 11px;
+            word-break: break-all;
+            margin: 10px 0;
+        }
+        .warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .user-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 10px;
+            margin: 15px 0;
+        }
+        .user-card {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            background-color: white;
+        }
+        .user-card.selected {
+            border-color: #1976d2;
+            background-color: #e3f2fd;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 공격 데모 - 유출된 서명 키로 타인 정보 접근</h1>
+        
+        <div class="warning">
+            <strong>⚠️ 경고:</strong> 이 데모는 보안 취약점을 재현하기 위한 것입니다.
+            실제 프로덕션 환경에서는 절대 사용하지 마세요.
+        </div>
+        
+        <p><a href="/">← 홈으로</a></p>
+    </div>
+
+    <div class="container">
+        <div class="step">
+            <h3>1단계: 사용자 목록 확인</h3>
+            <p>공격할 타겟 사용자를 선택하세요.</p>
+            <button class="btn" onclick="loadUsers()">사용자 목록 불러오기</button>
+            <div id="users-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="step">
+            <h3>2단계: 유출된 키로 비인증 토큰 생성</h3>
+            <p>유출된 서명 키를 사용하여 선택한 사용자의 토큰을 생성합니다.</p>
+            <label>타겟 사용자 ID: </label>
+            <input type="number" id="target-user-id" value="2" min="1" max="10">
+            <button class="btn btn-danger" onclick="generateFakeToken()">비인증 토큰 생성</button>
+            <div id="token-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="step">
+            <h3>3단계: 생성한 토큰으로 타인 정보 접근</h3>
+            <p>생성한 토큰을 사용하여 다른 사용자의 정보에 접근합니다.</p>
+            <label>접근할 사용자 ID: </label>
+            <input type="number" id="access-user-id" value="2" min="1" max="10">
+            <button class="btn btn-danger" onclick="testToken()">토큰으로 정보 접근</button>
+            <div id="test-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <div class="container">
+        <div class="step">
+            <h3>4단계: 직접 토큰 입력하여 테스트</h3>
+            <p>생성한 토큰을 직접 입력하여 테스트할 수 있습니다. 토큰을 입력하면 자동으로 토큰의 user_id가 추출되어 해당 사용자 정보에 접근합니다.</p>
+            <div class="info" style="padding: 10px; margin: 10px 0; border-radius: 4px;">
+                <strong>💡 토큰 생성 방법:</strong><br>
+                <strong>방법 1 - exploit.py:</strong> <code>hack-demo 디렉토리에서 python exploit.py</code> 실행 후 생성된 토큰 복사<br>
+                <strong>방법 2 - OpenSSL:</strong> <code>hack-demo 디렉토리에서 ./generate_token.sh 2 bob bob@example.com</code> 실행 후 생성된 토큰 복사
+            </div>
+            <label>토큰: </label><br>
+            <textarea id="manual-token" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace; font-size: 11px;" placeholder="여기에 토큰을 붙여넣으세요 (exploit.py 또는 generate_token.sh에서 생성한 토큰)" oninput="extractUserIdFromToken()"></textarea><br>
+            <div id="token-user-id-info" style="margin: 10px 0; padding: 8px; background-color: #e3f2fd; border-radius: 4px; font-size: 14px;"></div>
+            <button class="btn" onclick="testManualToken()">토큰으로 사용자 정보 접근</button>
+            <div id="manual-result" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        let generatedToken = null;
+        let generatedUserId = null;
+
+        async function loadUsers() {
+            const resultDiv = document.getElementById('users-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result info';
+            resultDiv.textContent = '사용자 목록 불러오는 중...';
+
+            try {
+                const response = await fetch('/users');
+                if (response.ok) {
+                    const users = await response.json();
+                    let html = '<div class="user-list">';
+                    users.forEach(user => {
+                        html += `<div class="user-card" onclick="selectUser(${user.id})">
+                            <strong>ID: ${user.id}</strong><br>
+                            사용자명: ${user.username}<br>
+                            이메일: ${user.email}
+                        </div>`;
+                    });
+                    html += '</div>';
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ 오류: ${response.status}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 오류: ${error.message}`;
+            }
+        }
+
+        function selectUser(userId) {
+            document.getElementById('target-user-id').value = userId;
+            document.getElementById('access-user-id').value = userId;
+            document.querySelectorAll('.user-card').forEach(card => {
+                card.classList.remove('selected');
+            });
+            event.currentTarget.classList.add('selected');
+        }
+
+        async function generateFakeToken() {
+            const userId = parseInt(document.getElementById('target-user-id').value);
+            const resultDiv = document.getElementById('token-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '토큰 생성 중...';
+
+            try {
+                const response = await fetch('/api/generate-fake-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ user_id: userId })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    generatedToken = data.token;
+                    generatedUserId = userId;
+                    
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+✅ 가짜 토큰 생성 성공!
+
+<strong>생성된 토큰:</strong>
+<div class="token-display">${data.token}</div>
+
+<strong>토큰 Payload:</strong>
+<pre>${JSON.stringify(data.payload, null, 2)}</pre>
+
+<strong>타겟 사용자:</strong>
+- ID: ${data.user.id}
+- 사용자명: ${data.user.username}
+- 이메일: ${data.user.email}
+
+⚠️ 이 토큰은 유출된 서명 키로 생성되었지만, 정상적으로 검증을 통과합니다!
+                    `;
+                    
+                    // 수동 입력 필드에도 토큰 설정
+                    document.getElementById('manual-token').value = data.token;
+                    // 토큰의 user_id 자동 추출
+                    extractUserIdFromToken();
+                } else {
+                    const error = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ 오류: ${error.error || response.status}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 오류: ${error.message}`;
+            }
+        }
+
+        async function testToken() {
+            if (!generatedToken) {
+                alert('먼저 비인증 토큰을 생성하세요 (2단계)');
+                return;
+            }
+
+            const userId = parseInt(document.getElementById('access-user-id').value);
+            const resultDiv = document.getElementById('test-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '토큰 테스트 중...';
+
+            try {
+                const response = await fetch('/api/test-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: generatedToken,
+                        user_id: userId
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+✅ ${data.message}
+
+<strong>접근한 사용자 정보:</strong>
+<pre>${JSON.stringify(data.user, null, 2)}</pre>
+
+<strong>토큰 정보:</strong>
+<pre>${JSON.stringify(data.token_info, null, 2)}</pre>
+
+⚠️ 유출된 키로 생성한 토큰으로 다른 사용자 정보에 접근했습니다!
+토큰의 user_id(${data.token_info.user_id})와 요청한 user_id(${userId})가 다르지만 접근이 허용되었습니다.
+                    `;
+                } else {
+                    const error = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ 오류: ${error.error || response.status}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 오류: ${error.message}`;
+            }
+        }
+
+        function extractUserIdFromToken() {
+            const token = document.getElementById('manual-token').value.trim();
+            const infoDiv = document.getElementById('token-user-id-info');
+            
+            if (!token) {
+                infoDiv.innerHTML = '';
+                return;
+            }
+
+            try {
+                // JWT 토큰 디코딩 (서명 검증 없이)
+                const parts = token.split('.');
+                if (parts.length !== 3) {
+                    infoDiv.innerHTML = '<span style="color: #d32f2f;">⚠️ 유효하지 않은 토큰 형식</span>';
+                    return;
+                }
+
+                const payload = JSON.parse(atob(parts[1]));
+                const tokenUserId = payload.user_id;
+                const username = payload.username || '알 수 없음';
+                const email = payload.email || '알 수 없음';
+
+                if (tokenUserId) {
+                    infoDiv.innerHTML = `
+                        <strong>토큰 정보:</strong><br>
+                        - User ID: <strong>${tokenUserId}</strong><br>
+                        - Username: ${username}<br>
+                        - Email: ${email}<br>
+                        <span style="color: #4caf50;">✓ 토큰의 user_id(${tokenUserId})로 자동 접근합니다</span>
+                    `;
+                } else {
+                    infoDiv.innerHTML = '<span style="color: #ff9800;">⚠️ 토큰에 user_id가 없습니다</span>';
+                }
+            } catch (error) {
+                infoDiv.innerHTML = '<span style="color: #d32f2f;">⚠️ 토큰 디코딩 실패: ' + error.message + '</span>';
+            }
+        }
+
+        async function testManualToken() {
+            const token = document.getElementById('manual-token').value.trim();
+
+            if (!token) {
+                alert('토큰을 입력하세요');
+                return;
+            }
+
+            // 토큰에서 user_id 추출
+            let userId = null;
+            try {
+                const parts = token.split('.');
+                if (parts.length === 3) {
+                    const payload = JSON.parse(atob(parts[1]));
+                    if (payload.user_id) {
+                        userId = payload.user_id;
+                    } else {
+                        alert('토큰에 user_id가 없습니다');
+                        return;
+                    }
+                } else {
+                    alert('유효하지 않은 토큰 형식입니다');
+                    return;
+                }
+            } catch (e) {
+                alert('토큰 디코딩 실패: ' + e.message);
+                return;
+            }
+
+            const resultDiv = document.getElementById('manual-result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.textContent = '토큰으로 사용자 정보 접근 중...';
+
+            try {
+                const response = await fetch('/api/test-token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        token: token,
+                        user_id: userId
+                    })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    resultDiv.className = 'result success';
+                    resultDiv.innerHTML = `
+✅ ${data.message}
+
+<strong>접근한 사용자 정보:</strong>
+<pre>${JSON.stringify(data.user, null, 2)}</pre>
+
+<strong>토큰 정보:</strong>
+<pre>${JSON.stringify(data.token_info, null, 2)}</pre>
+
+<strong>취약점 확인:</strong>
+- 유출된 키로 생성한 토큰이 정상적으로 검증을 통과했습니다
+- 토큰의 user_id(${data.token_info.user_id})로 사용자 정보에 접근했습니다
+- ⚠️ 이 토큰은 유출된 개인키로 서명되었지만, 정상적으로 검증을 통과했습니다!
+                    `;
+                } else {
+                    const error = await response.json();
+                    resultDiv.className = 'result error';
+                    resultDiv.textContent = `❌ 오류: ${error.error || response.status}`;
+                }
+            } catch (error) {
+                resultDiv.className = 'result error';
+                resultDiv.textContent = `❌ 오류: ${error.message}`;
+            }
+        }
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vault KV 솔루션</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #4caf50;
+        }
+        .success {
+            background-color: #e8f5e9;
+            border: 1px solid #4caf50;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 20px 0;
+        }
+        .btn {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #1976d2;
+            color: white;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        .btn:hover {
+            background-color: #1565c0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>✅ Vault KV 솔루션</h1>
+        
+        <div class="success">
+            <strong>✅ 개선 사항:</strong> 서명 키가 Vault KV에 안전하게 저장되어 있습니다.
+            앱은 필요할 때마다 Vault에서 키를 동적으로 로드합니다.
+        </div>
+        
+        <h2>개선 사항</h2>
+        <ul>
+            <li><strong>Vault KV 저장:</strong> RSA 개인키/공개키가 Vault KV에 저장됨</li>
+            <li><strong>동적 키 로드:</strong> 토큰 생성/검증 시 Vault에서 키를 동적으로 로드</li>
+            <li><strong>키 유출 방지:</strong> 앱 코드나 파일 시스템에 키가 하드코딩되지 않음</li>
+            <li><strong>user_id 검증:</strong> 토큰의 user_id와 요청한 user_id를 비교하여 검증</li>
+        </ul>
+        
+        <h2>데모 시작</h2>
+        <a href="/login" class="btn">로그인</a>
+    </div>
+</body>
+</html>
+
